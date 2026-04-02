@@ -1,15 +1,38 @@
 import { useState } from 'react'
-import Login from './pages/Login'
+import { useAuth0 } from '@auth0/auth0-react'
 import Dashboard from './pages/Dashboard'
 import Transfers from './pages/Transfers'
 
 function App() {
-  const [user, setUser] = useState(null)
+  const { isAuthenticated, isLoading, user, loginWithRedirect, logout } = useAuth0()
   const [page, setPage] = useState('dashboard')
 
-  if (!user) {
-    return <Login onLogin={(username) => setUser(username)} />
+  if (isLoading) {
+    return (
+      <div className="login-container">
+        <div className="login-card" style={{ textAlign: 'center' }}>
+          <h1>Acme Bank</h1>
+          <p className="subtitle">Loading...</p>
+        </div>
+      </div>
+    )
   }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="login-container">
+        <div className="login-card">
+          <h1>Acme Bank</h1>
+          <p className="subtitle">Online Banking Portal</p>
+          <button className="btn-primary" onClick={() => loginWithRedirect()}>
+            Sign In
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const displayName = user?.name || user?.email || 'User'
 
   return (
     <div className="app">
@@ -30,8 +53,13 @@ function App() {
           </button>
         </div>
         <div className="user-info">
-          <span>{user}</span>
-          <button className="logout" onClick={() => setUser(null)}>Log Out</button>
+          <span>{displayName}</span>
+          <button
+            className="logout"
+            onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+          >
+            Log Out
+          </button>
         </div>
       </nav>
       <main className="content">
