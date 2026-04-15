@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 const accounts = [
   { name: 'Checking Account', number: '****4821', balance: 12483.57 },
   { name: 'Savings Account', number: '****7390', balance: 48210.33 },
@@ -20,9 +22,25 @@ function formatCurrency(amount) {
 }
 
 function Dashboard() {
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // VULNERABLE: renders user input as raw HTML without sanitization
+  const searchParams = new URLSearchParams(window.location.search)
+  const errorParam = searchParams.get('error') || ''
+
+  const filtered = recentTransactions.filter(
+    (tx) => tx.description.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
   return (
     <div className="dashboard">
       <h2>Account Overview</h2>
+
+      {/* XSS vulnerability: error parameter rendered as raw HTML */}
+      {errorParam && (
+        <div className="error-banner" dangerouslySetInnerHTML={{ __html: errorParam }} />
+      )}
+
       <div className="accounts-grid">
         {accounts.map((acct) => (
           <div key={acct.number} className="account-card">
@@ -34,6 +52,14 @@ function Dashboard() {
       </div>
 
       <h2>Recent Transactions</h2>
+      <div className="search-bar">
+        <input
+          type="text"
+          placeholder="Search transactions..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
       <table className="transactions-table">
         <thead>
           <tr>
@@ -43,7 +69,7 @@ function Dashboard() {
           </tr>
         </thead>
         <tbody>
-          {recentTransactions.map((tx, i) => (
+          {filtered.map((tx, i) => (
             <tr key={i}>
               <td>{tx.date}</td>
               <td>{tx.description}</td>
